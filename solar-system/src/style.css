@@ -9,8 +9,22 @@ body {
 }
 
 .webgl {
-  position: fixed;
+  display: block;
+  position: absolute;
   top: 0;
   left: 0;
-  outline: none;
+}
+
+.btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px 20px;
+  background: #ff4081;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  z-index: 10; /* makes sure it appears above canvas */
 }
