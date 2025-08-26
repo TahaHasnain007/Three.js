@@ -1,10 +1,7 @@
 import * as THREE from "three";
 import "./style.css";
-import {
-  OrbitControls,
-  plane,
-  ThreeMFLoader,
-} from "three/examples/jsm/Addons.js";
+import { OrbitControls } from "three/examples/jsm/Addons.js";
+import gsap from "gsap";
 
 const scene = new THREE.Scene();
 
@@ -59,11 +56,12 @@ const orbitSpeeds = [
 ];
 
 const planets = [];
+const planetMeshes = [];
 
 for (let i = 0; i < 8; i++) {
   const planet = new THREE.Mesh(
     new THREE.SphereGeometry(planetSizes[i], 64, 64),
-    new THREE.MeshBasicMaterial({ color: planetColors[i] })
+    new THREE.MeshStandardMaterial({ color: planetColors[i] })
   );
 
   planet.position.x = orbitRadii[i];
@@ -80,7 +78,7 @@ for (let i = 0; i < 8; i++) {
 
 for (let i = 0; i < 8; i++) {
   const ring = new THREE.Mesh(
-    new THREE.RingGeometry(orbitRadii[i] - 0.2, orbitRadii[i] + 0.2, 64),
+    new THREE.RingGeometry(orbitRadii[i] - 0.1, orbitRadii[i] + 0.1, 64),
     new THREE.MeshBasicMaterial({
       color: 0x666666, // gray color
       side: THREE.DoubleSide, // visible from both sides
@@ -95,6 +93,8 @@ for (let i = 0; i < 8; i++) {
   scene.add(ring);
 }
 
+planets.forEach((planet) => planetMeshes.push(planet.mesh));
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -106,12 +106,13 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.z = 15;
+camera.position.z = 30;
+camera.position.y = 15;
 scene.add(camera);
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
-const hoveredPlanet = null;
+let currentHovered = null;
 
 window.addEventListener("mousemove", (event) => {
   mouse.x = (event.clientX / sizes.width) * 2 - 1;
@@ -121,12 +122,16 @@ window.addEventListener("mousemove", (event) => {
 const control = new OrbitControls(camera, canvas);
 control.enableDamping = true;
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0xffffff, 5);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(5, 5, 5);
-scene.add(directionalLight);
+const pointLight = new THREE.PointLight(0xffffff, 500);
+pointLight.position.set(0, 0, 0);
+scene.add(pointLight);
+
+// const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+// directionalLight.position.set(5, 5, 5);
+// scene.add(directionalLight);
 
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
@@ -141,6 +146,72 @@ const tick = () => {
   const elapsedTime = clock.getElapsedTime();
   const deltaTime = elapsedTime - previousTime;
   previousTime = elapsedTime;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(planetMeshes);
+
+  if (intersects.length > 0) {
+    // Mouse is hovering over a planet
+    const hoveredMesh = intersects[0].object;
+
+    // If this is a new planet being hovered
+    if (currentHovered !== hoveredMesh) {
+      // Reset previous planet if there was one
+      if (currentHovered) {
+        gsap.to(currentHovered.scale, {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: 0.3,
+          ease: "power2.out",
+        });
+        gsap.to(currentHovered.material.emissive, {
+          r: 0,
+          g: 0,
+          b: 0,
+          duration: 0.3,
+        });
+      }
+
+      // Set new hovered planet
+      currentHovered = hoveredMesh;
+
+      // Apply hover effects with GSAP
+      gsap.to(currentHovered.scale, {
+        x: 1.2,
+        y: 1.2,
+        z: 1.2,
+        duration: 0.3,
+        ease: "back.out(1.7)",
+      });
+      gsap.to(currentHovered.material.emissive, {
+        r: 0.3,
+        g: 0.3,
+        b: 0.3,
+        duration: 0.3,
+      });
+    }
+  } else {
+    // No planet being hovered
+    if (currentHovered) {
+      // Reset the previously hovered planet with GSAP
+      gsap.to(currentHovered.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+      gsap.to(currentHovered.material.emissive, {
+        r: 0,
+        g: 0,
+        b: 0,
+        duration: 0.3,
+      });
+      currentHovered = null;
+    }
+  }
 
   planets.forEach((planetObj) => {
     planetObj.angle += planetObj.speed;
