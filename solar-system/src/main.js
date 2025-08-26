@@ -1,6 +1,10 @@
 import * as THREE from "three";
 import "./style.css";
-import { OrbitControls, plane } from "three/examples/jsm/Addons.js";
+import {
+  OrbitControls,
+  plane,
+  ThreeMFLoader,
+} from "three/examples/jsm/Addons.js";
 
 const scene = new THREE.Scene();
 
@@ -31,11 +35,11 @@ const orbitRadii = [
 ];
 
 const planetSizes = [
-  5, // Sun 🌞
-  0.3, // Mercury
-  0.6, // Venus
-  0.65, // Earth
-  0.4, // Mars
+  3, // Sun 🌞
+  0.5, // Mercury
+  0.8, // Venus
+  0.85, // Earth
+  0.65, // Mars
   1.4, // Jupiter
   1.2, // Saturn
   0.9, // Uranus
@@ -45,13 +49,13 @@ const planetSizes = [
 const orbitSpeeds = [
   0, // Sun (doesn’t orbit)
   0.04, // Mercury (fastest)
-  0.015, // Venus
-  0.01, // Earth
-  0.008, // Mars
-  0.002, // Jupiter
-  0.001, // Saturn
-  0.0004, // Uranus
-  0.0002, // Neptune (slowest)
+  0.035, // Venus
+  0.02, // Earth
+  0.01, // Mars
+  0.009, // Jupiter
+  0.006, // Saturn
+  0.004, // Uranus
+  0.002, // Neptune (slowest)
 ];
 
 const planets = [];
@@ -74,6 +78,23 @@ for (let i = 0; i < 8; i++) {
   });
 }
 
+for (let i = 0; i < 8; i++) {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(orbitRadii[i] - 0.2, orbitRadii[i] + 0.2, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0x666666, // gray color
+      side: THREE.DoubleSide, // visible from both sides
+      opacity: 0.3, // semi-transparent
+      transparent: true,
+    })
+  );
+
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(0, 0, 0);
+
+  scene.add(ring);
+}
+
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -87,6 +108,15 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.z = 15;
 scene.add(camera);
+
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const hoveredPlanet = null;
+
+window.addEventListener("mousemove", (event) => {
+  mouse.x = (event.clientX / sizes.width) * 2 - 1;
+  mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+});
 
 const control = new OrbitControls(camera, canvas);
 control.enableDamping = true;
@@ -112,13 +142,11 @@ const tick = () => {
   const deltaTime = elapsedTime - previousTime;
   previousTime = elapsedTime;
 
-  // planets.forEach((planetObj) => {
-  //   planetObj.mesh.position.x = Math.cos(planetObj.angle) * planetObj.radius;
-  //   planetObj.mesh.position.z = Math.sin(planetObj.angle) * planetObj.radius;
-  // });
-
-  planets[3].mesh.position.x = Math.cos(1) * 0.2;
-  planets[3].mesh.position.z = Math.sin(1) * 0.2;
+  planets.forEach((planetObj) => {
+    planetObj.angle += planetObj.speed;
+    planetObj.mesh.position.x = Math.cos(planetObj.angle) * planetObj.radius;
+    planetObj.mesh.position.z = Math.sin(planetObj.angle) * planetObj.radius;
+  });
 
   window.requestAnimationFrame(tick);
 
