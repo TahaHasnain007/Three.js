@@ -36,8 +36,8 @@ const planetSizes = [
 
 const orbitSpeeds = [
   0, // Sun (doesn’t orbit)
-  0.04, // Mercury (fastest)
-  0.035, // Venus
+  0.02, // Mercury (fastest)
+  0.03, // Venus
   0.02, // Earth
   0.01, // Mars
   0.009, // Jupiter
